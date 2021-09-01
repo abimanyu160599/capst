@@ -1,418 +1,644 @@
-<!--html-->
-<!--<app-customer-layout></app-customer-layout>
-<div class="myContent">
-  <div class="container">
-    <form [formGroup]="registerForm" (ngSubmit)="Update(registerForm)" style="background-color:beige;">
-      <div class="row">
-        <div class="col-md-4">
-        </div>
-        <div class="col-md-4">
-          <h2>Edit Profile</h2>
-          <h6 style="text-align:center;font-size:smaller">&nbsp;&nbsp;&nbsp;*All Fields Are Mandatory</h6>
+using Infosys.TravelAwayDAL.Models;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+namespace Infosys.TravelAwayDAL
+{
+    public class TravelAwayRepository
+    {
+        private TravelAwayDBContext Context { get; set; }
+
+        public TravelAwayRepository()
+        {
+            Context = new TravelAwayDBContext();
+        }
 
 
-          <div class="form-group">
-            <label>First Name</label>
-            <input type="text" class="form-control" formControlName="firstName" placeholder="Enter the first Name">
-            <p *ngIf="registerForm.controls.firstName.errors?.required &&  registerForm.controls.firstName.touched" class="alert alert-danger">This field is required!</p>
-            <p *ngIf="registerForm.controls.firstName.errors?.pattern &&  registerForm.controls.firstName.touched" class="alert alert-danger"> First Name should contain alphabates with no spaces!</p>
-          </div>
+        //Register customer using LINQ
+        public bool RegisterUserUsingLinq(Customer customer)
+        {
+            bool status;
+            try
+            {
+                var role = (from rol in Context.Roles where rol.RoleName == "Customer" select rol).FirstOrDefault<Role>();
 
-          <div class="form-group">
-            <label>Last Name</label>
-            <input type="text" class="form-control" formControlName="lastName" placeholder="Enter the last Name">
-            <p *ngIf="registerForm.controls.lastName.errors?.required &&  registerForm.controls.lastName.touched" class="alert alert-danger">This field is required!</p>
-            <p *ngIf="registerForm.controls.lastName.errors?.pattern &&  registerForm.controls.lastName.touched" class="alert alert-danger">Last Name should contain alphabates with no spaces!</p>
-          </div>
+                if (role != null)
+                {
+                    customer.Role = role;
+                }
+                else
+                {
+                    status = false;
+                }
+                Context.Customers.Add(customer);
+                Context.SaveChanges();
+                status = true;
+            }
+            catch (Exception)
+            {
+                status = false;
+            }
 
-
-          <div class="form-group">
-            <label>Gender</label>
-            <input type="radio" formControlName="gender" name="gender" value="M" id="M" />
-            <label for="M">Male</label>
-            <input type="radio" formControlName="gender" name="gender" value="F" id="F" />
-            <label for="F">Female</label>
-          </div>
-          <div *ngIf="registerForm.controls.gender.invalid && registerForm.controls.gender.touched" class="alert alert-danger">
-            Gender required.
-          </div>
-          <div class="form-group">
-            <label>Contact Number</label>
-            <input type="number" class="form-control" formControlName="contactNumber" placeholder="Enter 10-digit contact number">
-            <p *ngIf="registerForm.controls.contactNumber.errors?.required &&  registerForm.controls.contactNumber.touched" class="alert alert-danger">This field is required!</p>
-            <p *ngIf="registerForm.controls.contactNumber.errors?.pattern || registerForm.controls.contactNumber.errors?.minlength || registerForm.controls.contactNumber.errors?.maxlength &&  registerForm.controls.contactNumber.touched" class="alert alert-danger">Please enter 10 digit contact number, It should not start with 0!</p>
-            <p *ngIf="registerForm.controls.contactNumber.errors?.pattern &&  registerForm.controls.contactNumber.dirty" class="alert alert-danger">Contact Number should not start with 0</p>
-
-          </div>
-          <div class="form-group">
-            <label>Date of Birth</label>
-            <input type="date" class="form-control" formControlName="dateOfbirth">
-            <p *ngIf="registerForm.controls.dateOfbirth.errors?.required &&  registerForm.controls.dateOfbirth.touched" class="alert alert-danger">This field is required!</p>
-            <p *ngIf="registerForm.controls.dateOfbirth.errors?.dateError &&  registerForm.controls.dateOfbirth.dirty" class="alert alert-danger">
-              {{registerForm.controls.dateOfbirth.errors?.dateError.message}}
-            </p>
-          </div>
-          <div class="form-group">
-            <label>Address</label>
-            <textarea type="text" class="form-control" formControlName="address" placeholder="Enter the address"></textarea>
-            <p *ngIf="registerForm.controls.address.errors?.required &&  registerForm.controls.address.touched" class="alert alert-danger">This field is required!</p>
-          </div>
-          <button type="submit" class="btn btn-primary btn-md" [disabled]="!registerForm.valid">Update</button>
-
-        </div>
-        <div class="col-md-4">
-        </div>
-      </div>
-      <div *ngIf="registerForm" style="color:red;text-align:center;">
-        <br />
-        {{msg}}
-      </div>
-    </form>
-  </div>
-</div>-->
+            return status;
+        }
 
 
+        public string[] ValidateUserCredentialsUsingLinq(string emailId, string password)
+        {
+            string[] roleName = new string[3];
+            try
+            {
+                var objUser = (from usr in Context.Customers
+                               where usr.EmailId == emailId && usr.UserPassword == password
+                               select usr.Role).FirstOrDefault<Role>();
+                if (objUser != null)
+                {
+                    roleName[0] = objUser.RoleName;
 
-<app-customer-layout></app-customer-layout>
-<div class="myContent">
-  <div class="container-fluid">
-    <div class="img-bg">
-      <img src="assets/p.png" />
-      <form [formGroup]="registerForm" (ngSubmit)="Update(registerForm)">
-        <div class="text-form">
-          <div class="col-md-6">
-          </div>
-          <div class="col-md-6">
-            <h1>Edit Profile</h1>
-            <h6 style="text-align:right;font-size:smaller">&nbsp;&nbsp;&nbsp;*All Fields Are Mandatory</h6>
+                    roleName[1] = (from usr in Context.Customers
+                                   where usr.EmailId == emailId && usr.UserPassword == password
+                                   select usr.FirstName).FirstOrDefault();
 
-
-            <div class="form-group" style="text-align:left">
-              <label style="font-family: 'Helvetica'; font-size: 18px ">First Name</label>
-              <input type="text" class="form-control" formControlName="firstName" placeholder="Enter the first Name">
-              <p *ngIf="registerForm.controls.firstName.errors?.required &&  registerForm.controls.firstName.touched" class="alert alert-danger">This field is required!</p>
-              <p *ngIf="registerForm.controls.firstName.errors?.pattern &&  registerForm.controls.firstName.touched" class="alert alert-danger"> First Name should contain alphabates with no spaces!</p>
-            </div>
-
-            <div class="form-group" style="text-align:left">
-              <label style="font-family: 'Helvetica'; font-size: 18px ">Last Name</label>
-              <input type="text" class="form-control" formControlName="lastName" placeholder="Enter the last Name">
-              <p *ngIf="registerForm.controls.lastName.errors?.required &&  registerForm.controls.lastName.touched" class="alert alert-danger">This field is required!</p>
-              <p *ngIf="registerForm.controls.lastName.errors?.pattern &&  registerForm.controls.lastName.touched" class="alert alert-danger">Last Name should contain alphabates with no spaces!</p>
-            </div>
-
-
-            <div class="form-group" style="text-align:left">
-              <label style="font-family: 'Helvetica'; font-size: 18px ">Gender</label>
-              &nbsp;
-              &nbsp;
-              &nbsp;
-              &nbsp;
-              <input type="radio" formControlName="gender" name="gender" value="M" id="M" />
-              <label for="M" style="font-family: 'Helvetica'; font-size: 18px ">Male</label>
-              &nbsp;
-              &nbsp;
-              &nbsp;
-              &nbsp;
-              <input type="radio" formControlName="gender" name="gender" value="F" id="F" />
-              <label for="F" style="font-family: 'Helvetica'; font-size: 18px ">Female</label>
-            </div>
-            <div *ngIf="registerForm.controls.gender.invalid && registerForm.controls.gender.touched" class="alert alert-danger">
-              Gender required.
-            </div>
-            <div class="form-group" style="text-align:left">
-              <label style="font-family: 'Helvetica'; font-size: 18px ">Contact Number</label>
-              <input type="number" class="form-control" formControlName="contactNumber" placeholder="Enter 10-digit contact number">
-              <p *ngIf="registerForm.controls.contactNumber.errors?.required &&  registerForm.controls.contactNumber.touched" class="alert alert-danger">This field is required!</p>
-              <p *ngIf="registerForm.controls.contactNumber.errors?.pattern || registerForm.controls.contactNumber.errors?.minlength || registerForm.controls.contactNumber.errors?.maxlength &&  registerForm.controls.contactNumber.touched" class="alert alert-danger">Please enter 10 digit contact number, It should not start with 0!</p>
-              <p *ngIf="registerForm.controls.contactNumber.errors?.pattern &&  registerForm.controls.contactNumber.dirty" class="alert alert-danger">Contact Number should not start with 0</p>
-
-            </div>
-            <div class="form-group" style="text-align:left">
-              <label style="font-family: 'Helvetica'; font-size: 18px ">Date of Birth</label>
-              <input type="date" class="form-control" formControlName="dateOfbirth">
-              <p *ngIf="registerForm.controls.dateOfbirth.errors?.required &&  registerForm.controls.dateOfbirth.touched" class="alert alert-danger">This field is required!</p>
-              <p *ngIf="registerForm.controls.dateOfbirth.errors?.dateError &&  registerForm.controls.dateOfbirth.dirty" class="alert alert-danger">
-                {{registerForm.controls.dateOfbirth.errors?.dateError.message}}
-              </p>
-            </div>
-            <div class="form-group" style="text-align:left">
-              <label style="font-family: 'Helvetica'; font-size: 18px ">Address</label>
-              <textarea type="text" class="form-control" formControlName="address" placeholder="Enter the address"></textarea>
-              <p *ngIf="registerForm.controls.address.errors?.required &&  registerForm.controls.address.touched" class="alert alert-danger">This field is required!</p>
-            </div>
-            <button type="submit" class="btn btn-primary btn-md" [disabled]="!registerForm.valid">Update</button>
-
-          </div>
-          <div class="col-md-4">
-          </div>
-        </div>
-        <div *ngIf="registerForm" style="color:red;text-align:center;">
-          <br />
-          {{msg}}
-        </div>
-
-      </form>
-    </div>
-  </div>
-</div>
+                    roleName[2] = (from usr in Context.Customers
+                                   where usr.EmailId == emailId && usr.UserPassword == password
+                                   select usr.LastName).FirstOrDefault();
+                }
+                else
+                {
+                    roleName = null;
+                }
+            }
+            catch (Exception)
+            {
+                roleName = null;
+            }
+            return roleName;
+        }
 
 
+        //employe login validation
+        public string[] ValidateEmployeeCredentials(string emailId, string password)
+        {
+            string[] roleName = new string[3];
+            try
+            {
+                var objUser = (from usr in Context.Employees
+                               where usr.EmailId == emailId && usr.Password == password
+                               select usr.Role).FirstOrDefault<Role>();
+
+                if (objUser != null)
+                {
+                    roleName[0] = objUser.RoleName;
+
+
+                    roleName[1] = (from usr in Context.Employees
+                                   where usr.EmailId == emailId && usr.Password == password
+                                   select usr.FirstName).FirstOrDefault();
+
+                    roleName[2] = (from usr in Context.Employees
+                                   where usr.EmailId == emailId && usr.Password == password
+                                   select usr.LastName).FirstOrDefault();
+                }
+                else
+                {
+                    roleName = null;
+                }
+            }
+            catch (Exception)
+            {
+                roleName = null;
+            }
+            return roleName;
+        }
+        //edit profile
+        public bool UpdateCustomerProfileUsingLinq(string emailId, string firstName, string lastName, string gender, decimal contact, DateTime dateOfBirth, string address)
+        {
+            bool status = false;
+            Customer customer = null;
+            try
+            {
+                customer = (from cust in Context.Customers where cust.EmailId == emailId select cust).FirstOrDefault<Customer>();
+                if (customer != null)
+                {
+                    customer.FirstName = firstName;
+                    customer.LastName = lastName;
+                    customer.Gender = gender;
+                    customer.ContactNumber = contact;
+                    customer.DateOfBirth = dateOfBirth;
+                    customer.Address = address;
+                    Context.SaveChanges();
+                    status = true;
+
+
+                }
+            }
+            catch (Exception)
+            {
+
+                status = false;
+            }
+            return status;
+        }
+        //View all packages
+        public List<Package> DisplayAllPackages()
+        {
+            List<Package> listPackages = new List<Package>();
+            try
+            {
+                listPackages = (from c in Context.Packages select c).ToList();
+            }
+            catch (Exception ex)
+            {
+                listPackages = null;
+            }
+            return listPackages;
+        }
+
+
+        //To Do: Implement appropriate logic and change the return statement as per your logic
+
+        //view all packages by category
+        public List<PackageDetail> DisplayAllPackageDetailsByCategory(int packageId)
+        {
+            List<PackageDetail> listPkgDetails = null;
+            try
+            {
+                listPkgDetails = (from p in Context.PackageDetails where p.PackageId == packageId select p).ToList<PackageDetail>();
+            }
+            catch (Exception ex)
+            {
+                listPkgDetails = null;
+            }
+            return listPkgDetails;
+        }
+
+        
+        public List<PackageCategory> GetPackageCategories()
+        {
+            List<PackageCategory> listPkgDetails = null;
+            try
+            {
+                //SqlParameter prmPkgName = new SqlParameter("@pkgName", pkgName);
+                listPkgDetails = (from p in Context.PackageCategories
+                                  orderby p.PackageCategoryId
+                                  ascending
+                                  select p).ToList<PackageCategory>();
+            }
+            catch (Exception ex)
+            {
+                listPkgDetails = null;
+            }
+            return listPkgDetails;
+        }
+
+        //select accomodation
+        //Select Accomodation 
+        public int AddAccomodation(Accomodation accObj)
+        {
+            int returnVal = 0;
+            SqlParameter prmBookingId = new SqlParameter("@bookingId", accObj.BookingId);
+            SqlParameter prmCity = new SqlParameter("@city", accObj.City);
+            SqlParameter prmHotelRating = new SqlParameter("@hotelRating", accObj.HotelRating);
+            SqlParameter prmHotel = new SqlParameter("@hotel", accObj.HotelName);
+            SqlParameter prmRoomType = new SqlParameter("@roomType", accObj.RoomType);
+            SqlParameter prmNoOfRooms = new SqlParameter("@noOfRooms", accObj.NoOfRooms);
+            SqlParameter prmEstimatedCost = new SqlParameter("@estimatedCost", accObj.Price);
+            SqlParameter prmReturnResult = new SqlParameter("@ReturnResult", System.Data.SqlDbType.Int);
+            prmReturnResult.Direction = System.Data.ParameterDirection.Output;
+
+            try
+            {
+                Context.Database.ExecuteSqlRaw("exec @ReturnResult = dbo.usp_AddAccommodation @bookingId, @city, @hotelRating, @hotel, @roomType, @noOfRooms, @estimatedCost", prmReturnResult, prmBookingId, prmCity, prmHotelRating, prmHotel, prmRoomType, prmNoOfRooms, prmEstimatedCost);
+                returnVal = Convert.ToInt32(prmReturnResult.Value);
+            }
+            catch (Exception ex)
+            {
+                returnVal = -99;
+            }
+            return returnVal;
+        }
+
+
+        public int BookPackage(BookPackage book)
+        {
+            int status = 0;
+            try
+            {
+                Context.BookPackages.Add(book);
+                Context.SaveChanges();
+                status = Context.BookPackages.OrderBy(b => b.BookingId).Select(b => b.BookingId).LastOrDefault();
+            }
+            catch (Exception)
+            {
+
+                status = -99;
+            }
+
+            return status;
+        }
+
+
+
+        public List<BookPackage> DisplayBookingDetails(string emailId)
+        {
+            List<BookPackage> lstbookings = null;
+            try
+            {
+
+                lstbookings = (from p in Context.BookPackages
+                               where p.EmailId == emailId
+                               select p).ToList<BookPackage>();
+            }
+            catch (Exception ex)
+            {
+                lstbookings = null;
+            }
+            return lstbookings;
+        }
+        //accomodation
+
+        public List<Hotel> GetHotelDetailsList()
+        {
+            List<Hotel> list = null;
+            try
+            {
+                list = (from h in Context.Hotels
+                        select h).ToList<Hotel>();
+
+                return list;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return list;
+            }
+        }
 
 
 
 
-<!--editprofile-->
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
-import { Router } from '@angular/router';
-import { UserService } from '../travelAway-services/user-service/user.service';
-@Component({
-  selector: 'app-edit-profile',
-  templateUrl: './edit-profile.component.html',
-  styleUrls: ['./edit-profile.component.css']
-})
-export class EditProfileComponent implements OnInit {
+        public int SelectAccomodationUsingLinq(Accomodation accObj)
+        {
+            int returnVal = 0;
+            SqlParameter prmBookingId = new SqlParameter("@bookingId", accObj.BookingId);
+            SqlParameter prmCity = new SqlParameter("@city", accObj.City);
+            SqlParameter prmHotelRating = new SqlParameter("@hotelRating", accObj.HotelRating);
+            SqlParameter prmHotel = new SqlParameter("@hotel", accObj.HotelName);
+            SqlParameter prmRoomType = new SqlParameter("@roomType", accObj.RoomType);
+            SqlParameter prmNoOfRooms = new SqlParameter("@noOfRooms", accObj.NoOfRooms);
+            SqlParameter prmEstimatedCost = new SqlParameter("@estimatedCost", accObj.Price);
+            SqlParameter prmReturnResult = new SqlParameter("@ReturnResult", System.Data.SqlDbType.Int);
+            prmReturnResult.Direction = System.Data.ParameterDirection.Output;
 
-  registerForm: FormGroup;
-  msg: string;
-  emailId: string;
-  errorMsg: any;
-  status: boolean;
-  firstName: string;
+            try
+            {
+                Context.Database.ExecuteSqlRaw("exec @ReturnResult = dbo.usp_AddAccommodation @bookingId, @city, @hotelRating, @hotel, @roomType, @noOfRooms, @estimatedCost", prmReturnResult, prmBookingId, prmCity, prmHotelRating, prmHotel, prmRoomType, prmNoOfRooms, prmEstimatedCost);
+                returnVal = Convert.ToInt32(prmReturnResult.Value);
+            }
+            catch (Exception ex)
+            {
+                returnVal = -99;
+            }
+            return returnVal;
+        }
 
-  userRole: string;
-  lastName: string;
+        /**
+         * Develop by : 
+         * **/
+        public List<string> GetAllCityList()
+        {
+            List<string> cityList = null;
+            try
+            {
+                cityList = (from h in Context.Hotels
+                            select h.City).Distinct<string>().ToList<string>();
 
-  constructor(private formBuilder: FormBuilder, private router: Router,  private _userService: UserService) { }
+                return cityList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return cityList;
+            }
+        }
 
-  ngOnInit() {
+        public int getPackageIdByCity(string city)
+        {
+            int status = 0;
+            try
+            {
+                status = Context.Packages.Where(p => p.PackageName == city).Select(p => p.PackageId).FirstOrDefault();
 
-    this.emailId = sessionStorage.getItem("userName");
-    this.userRole = sessionStorage.getItem('userRole');
-    this.firstName = sessionStorage.getItem('firstName');
-    this.lastName = sessionStorage.getItem('lastName');
-    if (this.userRole != "Customer") {
-      this.router.navigate(['/home']);
+            }
+            catch(Exception)
+            {
+                status = -99;
+            }
+            return status;
+        }
+        public List<Hotel> GetHotelsByCityNameAndHotelType(string cityName, int hotelType)
+        {
+            List<Hotel> hotelList = null;
+            try
+            {
+                if (cityName == "All" && hotelType == 0)
+                {
+                    hotelList = (from h in Context.Hotels
+                                 select new Hotel()
+                                 {
+                                     HotelId = h.HotelId,
+                                     HotelName = h.HotelName
+                                 }
+                                ).ToList<Hotel>();
+                }
+                else if (cityName != "All" && hotelType == 0)
+                {
+                    hotelList = (from h in Context.Hotels
+                                 where h.City == cityName
+                                 select new Hotel()
+                                 {
+                                     HotelId = h.HotelId,
+                                     HotelName = h.HotelName
+                                 }
+                                ).ToList<Hotel>();
+                }
+                else if (cityName == "All" && hotelType != 0)
+                {
+                    hotelList = (from h in Context.Hotels
+                                 where h.HotelRating == hotelType
+                                 select new Hotel()
+                                 {
+                                     HotelId = h.HotelId,
+                                     HotelName = h.HotelName
+                                 }
+                                ).ToList<Hotel>();
+                }
+                else if (cityName != "All" && hotelType != 0)
+                {
+                    hotelList = (from h in Context.Hotels
+                                 where h.HotelRating == hotelType && h.City == cityName
+                                 select new Hotel()
+                                 {
+                                     HotelId = h.HotelId,
+                                     HotelName = h.HotelName
+                                 }
+                                ).ToList<Hotel>();
+                }
+
+                return hotelList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return hotelList;
+            }
+        }
+
+
+        public decimal GetCalculatedEstimateCost(string hotelName, string roomType, int numberOfRooms)
+        {
+            decimal amount = 1;
+            try
+            {
+                Hotel obj = (from h in Context.Hotels where h.HotelName == hotelName select h).Single();
+                if (roomType == "single")
+                {
+                    amount = (decimal)(numberOfRooms * obj.SingleRoomPrice);
+                }
+                else if (roomType == "double")
+                {
+                    amount = (decimal)(numberOfRooms * obj.DoubleRoomPrice);
+                }
+                else if (roomType == "deluxe")
+                {
+                    amount = (decimal)(numberOfRooms * obj.DeluxeeRoomPrice);
+                }
+                else if (roomType == "suite")
+                {
+                    amount = (decimal)(numberOfRooms * obj.SuiteRoomPrice);
+                }
+                else
+                {
+                    return 0;
+                }
+
+                return amount;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                return amount;
+            }
+
+        }
+
+
+        //customer care
+
+
+        //customer care
+        public bool CustomerCareDetails(int bookingId, string queryStatus, string query, string assignee, string queryAnswer)
+        {
+            bool status = false;
+            CustomerCare c = new CustomerCare();
+            c.BookingId = bookingId;
+            c.QueryStatus = queryStatus;
+            c.Query = query;
+            c.Assignee = assignee;
+            c.QueryAnswer = queryAnswer;
+
+            try
+            {
+                Context.CustomerCares.Add(c);
+                Context.SaveChanges();
+                status = true;
+            }
+            catch (Exception ex)
+            {
+                status = false;
+            }
+            return status;
+        }
+        // get customer care by booking id
+        public int GetCustomerCareBookingId(string emailId)
+        {
+            try
+            {
+                var bookingId = Context.BookPackages.OrderBy(b => b.BookingId).Where(b => b.EmailId == emailId).Select(b => b.BookingId).LastOrDefault();
+                return bookingId;
+            }
+            catch (Exception ex)
+            {
+                return -99;
+            }
+        }
+
+
+        public int addhotels(Hotel hotel)
+        {
+            int result;
+            try
+            {
+                Context.Hotels.Add(hotel);
+                Context.SaveChanges();
+                result = Context.Hotels.
+                    OrderBy(v => v.HotelId).
+                    Select(bkId => bkId.HotelId).LastOrDefault();
+            }
+            catch (Exception)
+            {
+
+                result = 0;
+            }
+
+            return result;
+        }
+
+        public List<Hotel> viewHotelDetails()
+        {
+            var hotel = new List<Hotel>();
+            try
+            {
+                hotel = (from h in Context.Hotels select h).
+                    ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                hotel = null;
+            }
+            return hotel;
+        }
+
+
+
+        public List<Vehicle> viewVehicleDetails()
+        {
+            var vehicle = new List<Vehicle>();
+            try
+            {
+                vehicle = (from v in Context.Vehicles select v).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                vehicle = null;
+            }
+            return vehicle;
+
+        }
+        public int rentvehicle(VehicleBooked vb)
+        {
+            int result;
+            try
+            {
+                Context.VehicleBookeds.Add(vb);
+                Context.SaveChanges();
+                result = Context.VehicleBookeds.
+                    OrderBy(v => v.VehicleBookingId).
+                    Select(bkId => bkId.VehicleBookingId).
+                    LastOrDefault();
+            }
+            catch (Exception)
+            {
+
+                result = 0;
+            }
+
+            return result;
+        }
+
+        public int addvehicles(Vehicle vehicle)
+        {
+            int result;
+            try
+            {
+                Context.Vehicles.Add(vehicle);
+                Context.SaveChanges();
+                result = Context.Vehicles.
+                    OrderBy(v => v.VehicleId).
+                    Select(bkId => bkId.VehicleId).LastOrDefault();
+            }
+            catch (Exception)
+            {
+
+                result = 0;
+            }
+
+            return result;
+        }
+        //add rating
+        public bool AddRatings(Models.Rating rating)
+        {
+            bool status = false;
+            try
+            {
+                Rating ratingObj = new Rating();
+                ratingObj.RatingId = rating.RatingId;
+                ratingObj.Comments = rating.Comments;
+                ratingObj.Rating1 = rating.Rating1;
+                ratingObj.BookingId = rating.BookingId;
+                Context.Ratings.Add(ratingObj);
+                Context.SaveChanges();
+                status = true;
+            }
+            catch (Exception ex)
+            {
+                status = false;
+            }
+            return status;
+        }
+
+        public int TotalPaymentUsingLinq(int bookingId)
+        {
+            int totalPay = 0;
+            SqlParameter prmBookingId = new SqlParameter("@bookingId", bookingId);
+
+            SqlParameter prmReturnResult = new SqlParameter("@ReturnResult", System.Data.SqlDbType.Int);
+            prmReturnResult.Direction = System.Data.ParameterDirection.Output;
+
+            try
+            {
+                Context.Database.ExecuteSqlRaw("exec @ReturnResult = dbo.usp_bookingCost @bookingId", prmReturnResult, prmBookingId);
+                totalPay = Convert.ToInt32(prmReturnResult.Value);
+            }
+            catch (Exception)
+            {
+                totalPay = -99;
+            }
+            return totalPay;
+        }
+
+        public bool PaymentStatusUsingLinq(Payment payment)
+        {
+            bool status;
+            try
+            {
+                Payment pay = new Payment();
+
+                pay.PaymentId = payment.PaymentId;
+                pay.BookingId = payment.BookingId;
+                pay.TotalAmount = payment.TotalAmount;
+                pay.PaymentStatus = payment.PaymentStatus;
+
+                Context.Payments.Add(payment);
+                Context.SaveChanges();
+                status = true;
+            }
+            catch (Exception)
+            {
+                status = false;
+            }
+
+            return status;
+        }
+
+
+
+
+
+
     }
-
-    this.registerForm = this.formBuilder.group({
-      firstName: ['', [Validators.required, Validators.pattern("^[a-zA-Z]+$")]],
-      lastName: ['', [Validators.required, Validators.pattern("^[a-zA-Z]+$")]],
-      gender: ['', Validators.required],
-      dateOfbirth: ['', [Validators.required, checkDate]],
-      address: ['', Validators.required],
-      contactNumber: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(10), Validators.pattern("[1-9]{1}[0-9]{9}")]]
-    })
-  }
-  Update(form: FormGroup) {
-
-    console.log(form.value.lastName, form.get('gender').value,
-      form.value.dateOfbirth, form.value.address, form.value.contactNumber);
-    this._userService.UpdateUserProfile(form.value.firstName, form.value.lastName, this.emailId, form.get('gender').value, form.value.contactNumber, form.value.dateOfbirth,
-      form.value.address).subscribe(
-        responseUpdateData => {
-          this.status = responseUpdateData
-          alert("Details updated succesfully!")
-          this.router.navigate(['/home']);
-          this.ngOnInit();
-        },
-        responseUpdateError => {
-          this.errorMsg = responseUpdateError
-          alert("Something went wrong!")
-        },
-        () => console.log("UpdateMethod executed succesfully!")
-      )
-  }
 }
-function checkDate(control: FormControl) {
-  var currentDate = new Date();
-  var givenDate = new Date(control.value)
-  console.log(currentDate);
-  console.log(givenDate);
-  if (givenDate <= currentDate || givenDate == null) {
-    return null
-  }
-  else {
-    return {
-      dateError: {
-        message: "Enter a date less than today's date"
-      }
-    };
-  }
-}
-
-
-
-
-<!--bookingcomponenthtml-->
-
-
-
-<app-customer-layout></app-customer-layout>
-<div class="specs">
-  <div class="img-bg">
-    <img src="assets/ty.jpg" />
-    <div class="text">
-      <h1>Book Package</h1><br />
-    </div>
-  </div>
-  <form [formGroup]="bookPackage" (ngSubmit)="SubmitForm(bookPackage)">
-    <div class=" text-form">
-      <div class="col-md-5" style="background-color:white;padding-top:8px;padding-bottom:10px">
-        <div class="form-group">
-          <label>Contact Number</label>
-          <input type="tel" class="form-control" formControlName="contactNumber" minlength="10" maxlength="10">
-          <p *ngIf="bookPackage.controls.contactNumber.errors?.required &&  bookPackage.controls.contactNumber.touched" class="alert alert-danger">This field is required!</p>
-          <!--<p *ngIf="bookPackage.controls.contactNumber.errors?.pattern &&  bookPackage.controls.contactNumber.touched" class="alert alert-danger">contact number should be of 10 digit</p>-->
-          <p *ngIf="bookPackage.controls.contactNumber.errors?.minlength || bookPackage.controls.contactNumber.errors?.maxlength  &&  bookPackage.controls.contactNumber.touched" class="alert alert-danger">The Contact number should be of proper length!</p>
-
-
-        </div>
-        <div class="form-group">
-          <label>Residential Address</label>
-          <input type="text" class="form-control" formControlName="address">
-          <p *ngIf="bookPackage.controls.address.errors?.required &&  bookPackage.controls.address.touched" class="alert alert-danger">This field is required!</p>
-        </div>
-
-        <div class="form-group">
-          <label>Date of Travel</label>
-          <input type="date" class="form-control" formControlName="dateOftravel">
-          <p *ngIf="bookPackage.controls.dateOftravel.errors?.required &&  bookPackage.controls.dateOftravel.touched" class="alert alert-danger">This field is required!</p>
-          <p *ngIf="bookPackage.controls.dateOftravel.errors?.CDError &&  bookPackage.controls.dateOftravel.dirty" class="alert alert-danger">
-            {{bookPackage.controls.dateOftravel.errors?.CDError.message}}
-          </p>
-        </div>
-        <div class="form-group">
-          <label>Adults</label>
-          <input type="number" class="form-control" formControlName="adults">
-          <p *ngIf="bookPackage.controls.adults.errors?.required &&  bookPackage.controls.adults.touched" class="alert alert-danger">This field is required!</p>
-          <p *ngIf="bookPackage.controls.adults.errors?.min &&  bookPackage.controls.adults.touched" class="alert alert-danger">adults should be greater than zero </p>
-
-        </div>
-        <div class="form-group">
-          <label>Children</label>
-          <input type="number" class="form-control" formControlName="children">
-          <p *ngIf="bookPackage.controls.children.errors?.required &&  bookPackage.controls.children.touched" class="alert alert-danger">This field is required!</p>
-          <p *ngIf="bookPackage.controls.children.errors?.min &&  bookPackage.controls.contactNumber.touched" class="alert alert-danger">children should be greater than or equal to zero </p>
-
-        </div>
-        <button type="submit" class="btn btn-primary" style="color:white;margin:auto;display:block" [disabled]="!bookPackage.valid">Book Package</button>
-      </div>
-    </div>
-  </form>
-  <br />
-  <div>
-    {{msg}}
-  </div>
-</div>
-
-
-<!--bookingcomponentts-->
-import { Component, OnInit } from '@angular/core';
-import { FormGroup, FormBuilder, Validators, FormControl } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { UserService } from '../travelAway-services/user-service/user.service';
-import { IBookings } from '../travelAway-interfaces/bookings';
-
-@Component({
-  selector: 'app-booking',
-  templateUrl: './booking.component.html',
-  styleUrls: ['./booking.component.css']
-})
-export class BookingComponent implements OnInit {
-
-  bookPackage: FormGroup;
-  book: IBookings;
-  msg: string;
-  status: number;
-  errMsg: string;
-  userRole: string;
-  userName: string;
-  packageId: number;
-  mobile: number;
-  bookingStatus: string;
-  bookingId: number;
-  constructor(private route: ActivatedRoute, private formBuilder: FormBuilder, private _taService: UserService, private router: Router) { }
-
-  ngOnInit() {
-
-    this.bookPackage = this.formBuilder.group({
-      contactNumber: ['', [Validators.required, Validators.pattern("^[1-9][0-9]{9}$")]],
-      address: ['', [Validators.required]],
-      dateOftravel: ['', [Validators.required, checkDate]],
-
-      adults: ['', [Validators.required, , Validators.min(1)]],
-      children: ['', [Validators.required, , Validators.min(0)]]
-    });
-
-    this.userRole = sessionStorage.getItem('userRole');
-    this.userName = sessionStorage.getItem('userName')
-    this.packageId = parseInt(this.route.snapshot.params['packageId']);
-
-  }
-  SubmitForm(form: FormGroup) {
-
-    this.mobile = parseInt(form.value.contactNumber);
-    this.bookingStatus = "Booked"
-    console.log(this.packageId);
-    console.log(this.userName);
-    console.log(this.mobile);
-    console.log(form.value.address);
-    console.log(form.value.dateOftravel);
-    console.log(form.value.adults);
-    console.log(form.value.children);
-    console.log(this.bookingStatus);
-
-    this.book = {bookingId: 0, contactNumber: this.mobile, address: form.value.address, dateOfTravel: form.value.dateOftravel, numberOfAdults: form.value.adults, numberOfChildren: form.value.children,
-      status: this.bookingStatus, emailId: this.userName, packageId: this.packageId
-    }
-
-    this._taService.BookPackage(this.mobile, form.value.address, form.value.dateOftravel, form.value.adults,
-      form.value.children, this.userName, this.packageId, this.bookingStatus).subscribe(
-
-        responseSuccess => {
-          this.status = responseSuccess
-          console.log(responseSuccess)
-          if (this.status>0) {
-            if (confirm("Booking successful\nContinue to book accomodation?"))
-              //this.bookAccomodation(this.book)
-              this.router.navigate(['/accomodation', this.status])
-            else
-              this.router.navigate(['/viewBookings'])
-          }
-          else {
-            alert("cannot book.");
-          }
-        },
-        responseError => {
-          this.errMsg = responseError
-          console.log(this.errMsg);
-          alert("Some error occured, please try after some time.");
-        },
-        () => console.log("SubmitForm method executed succesfully")
-      );
-
-  }
-
-  bookAccomodation(book: IBookings) {
-    this.router.navigate(['/accomodation', book.bookingId])
-  }
-}
-
-
-function checkDate(control: FormControl) {
-  var currentD = new Date();
-  var userD = new Date(control.value);
-  if (userD >= currentD || userD == null) {
-    return null;
-  }
-  else {
-    return {
-      CDError: {
-        message: "enter a date greater than todays date"
-      }
-    }
-  }
-}
-
